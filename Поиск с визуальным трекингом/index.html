@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Дерево поиска</title>
+  <style>
+    body {
+      background: #1a1a2e;
+      color: white;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h2 { margin-bottom: 16px; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    input {
+      padding: 8px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      background: #2a2a4e;
+      color: white;
+      width: 100px;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #4a9eff;
+      color: black;
+      font-weight: bold;
+    }
+
+    button:hover { background: #6ab4ff; }
+
+    #tree-svg {
+      background: #12121a;
+      border-radius: 12px;
+      border: 1px solid #2a2a4e;
+      max-width: 100%;
+    }
+
+    #log {
+      margin-top: 14px;
+      width: 95vw;
+      max-width: 1100px;
+      background: #12121a;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 1.8;
+      min-height: 60px;
+      border: 1px solid #2a2a4e;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Дерево двоичного поиска.<br> Петухова, Костарев 24-11.</h2>
+
+<div class="controls">
+  <button onclick="newTree()">Новое дерево</button>
+  <input type="number" id="val" placeholder="Число...">
+  <button onclick="startSearch()">Найти</button>
+</div>
+
+<svg id="tree-svg" width="1100" height="400"></svg>
+
+<div id="log"></div>
+
+<script>
+const API = 'http://localhost:3000';
+
+class Node {
+  constructor(value) {
+    this.value = value;    // значение узла
+    this.left = null;      // левый потомок
+    this.right = null;     // правый потомок
+    this.x = 0;            // координаты для отрисовки
+    this.y = 0;
+  }
+}
+
+let root = null;
+let isAnimating = false; 
+
+function nodeFromBackend(raw) {
+  if (raw === null) return null;
+  const node = new Node(raw[0]);        // значение
+  node.left = nodeFromBackend(raw[1]);   // левое поддерево
+  node.right = nodeFromBackend(raw[2]);  // правое поддерево
+  return node;
+}
+
+// рассчет координат для каждого узла
+
+function calcPositions(node, xMin, xMax, depth) {
+  if (node === null) return;
+  // ставим узел посередине между левой границей и правой
+  node.x = (xMin + xMax) / 2;
+  node.y = 50 + depth * 85;
+  calcPositions(node.left, xMin, node.x, depth + 1);
+  calcPositions(node.right, node.x, xMax, depth + 1);
+}
+
+// отрисовка дерева
+
+function drawTree() {
+  const svg = document.getElementById('tree-svg');
+  svg.innerHTML = '';
+  // рассчет координат для всех узлов
+  calcPositions(root, 0, 1100, 0);
+  // линии
+  drawEdges(root, svg);
+  //узлы
+  drawNodes(root, svg);
+}
+
+// ребра
+function drawEdges(node, svg) {
+  if (node === null) return;
+  if (node.left) {
+    svg.appendChild(makeLine
+    (node.x, node.y, 
+    node.left.x, node.left.y,
+    'edge_' + node.value + '_' + node.left.value)); // уникальное id ребра
+    drawEdges(node.left, svg);
+  }
+  if (node.right) {
+    svg.appendChild(makeLine(node.x, node.y, node.right.x, node.right.y,
+      'edge_' + node.value + '_' + node.right.value));
+    drawEdges(node.right, svg);
+  }
+}
+
+// узлы
+function drawNodes(node, svg) {
+  if (node === null) return;
+
+  // кружок создается
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', node.x);
+  circle.setAttribute('cy', node.y);
+  circle.setAttribute('r', 20);
+  circle.setAttribute('fill', '#1a1a3e');
+  circle.setAttribute('stroke', '#4a4a7a');
+  circle.setAttribute('stroke-width', '2');
+  circle.id = 'circle_' + node.value;
+  svg.appendChild(circle);
+
+  // и текст
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('x', node.x);
+  text.setAttribute('y', node.y + 5);
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('fill', 'white');
+  text.setAttribute('font-size', '13');
+  text.setAttribute('font-family', 'monospace');
+  text.textContent = node.value;
+  svg.appendChild(text);
+
+  // левое и правое поддеревья
+  drawNodes(node.left, svg);
+  drawNodes(node.right, svg);
+}
+
+// создание ребра дерева
+function makeLine(x1, y1, x2, y2, id) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1);
+  line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2);
+  line.setAttribute('y2', y2);
+  line.setAttribute('stroke', '#3a3a6a');
+  line.setAttribute('stroke-width', '2');
+  line.id = id;
+  return line;
+}
+
+// анимация узла
+function colorNode(value, fill, stroke) {
+  const circle = document.getElementById('circle_' + value);
+  if (!circle) return;
+  circle.setAttribute('fill', fill);
+  circle.setAttribute('stroke', stroke);
+  circle.setAttribute('stroke-width', '3');
+}
+
+// анимация ребра
+function colorEdge(from, to) {
+  const line = document.getElementById('edge_' + from + '_' + to);
+  if (!line) return;
+  line.setAttribute('stroke', '#4a9eff');
+  line.setAttribute('stroke-width', '3');
+}
+
+// задержка
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// path - массив чисел, которые посетили во время поиска
+// found - нашли число или нет
+// target - какое число искали
+
+// анимация поиска
+async function animate(path, found, target) {
+  const logDiv = document.getElementById('log');
+  logDiv.innerHTML = '';
+
+  for (let i = 0; i < path.length; i++) {
+    const current = path[i];
+    const prev = path[i - 1];
+
+    // красим в синий предыдущий узел
+    if (prev !== undefined) {
+      colorNode(prev, '#1e3a5f', '#4a9eff');
+      colorEdge(prev, current);
+    }
+
+    colorNode(current, '#0d2a1a', '#00ff88');
+
+    const isLast = (i === path.length - 1); // проверка на последний узел
+    //если нашли
+    if (isLast && found) {
+      logDiv.innerHTML += `Узел <b>${current}</b>: нашли ${target}!<br>`;
+    } // если последний узел, но число не нашли
+    else if (isLast && !found) {
+      logDiv.innerHTML += `Узел <b>${current}</b>: дальше пусто, ${target} не найден.<br>`;
+    } else {
+      const next = path[i + 1];
+      const dir = next < current ? 'влево' : 'вправо';
+      logDiv.innerHTML += `→ Узел <b>${current}</b>: ${target} ${target < current ? '<' : '>'} ${current}, идём ${dir}<br>`;
+    }
+
+    await sleep(600);
+  }
+
+  // красим в красный последний узел
+  colorNode(path[path.length - 1], '#2a0a0a', '#ff4444');
+}
+
+async function newTree() {
+  if (isAnimating) return;
+
+  const response = await fetch(API + '/api/tree');
+  const data = await response.json();
+
+  // преобразование данных с бэка в объекты
+  root = nodeFromBackend(data.tree);
+  drawTree();
+  document.getElementById('log').textContent = 'Дерево загружено';
+}
+
+async function startSearch() {
+  if (isAnimating) return;
+  if (root === null) {
+    document.getElementById('log').textContent = 'Для начала нужно создать новое дерево.';
+    return;
+  }
+
+  //получаем число из поля ввода
+  const target = parseInt(document.getElementById('val').value);
+  if (isNaN(target)) {
+    document.getElementById('log').textContent = 'Введите число';
+    return;
+  }
+
+  // отправляем число на бэк
+  const response = await fetch(API + '/api/search?value=' + target);
+  
+  // получаем рез
+  const result = await response.json();
+
+  //запуск
+  isAnimating = true;
+  drawTree();
+  await animate(result.path_values, result.found, target);
+  isAnimating = false;
+}
+</script>
+</body>
+</html>
