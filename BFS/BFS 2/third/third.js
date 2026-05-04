@@ -46,6 +46,5 @@ function minRotations(start, target, forbidden) {
     return -1; // Невозможно достичь
 }
 
-// Пример использования
 console.log("Минимальное количество поворотов:", 
     minRotations("0000", "0202", ["0001", "0101"])); // 6
