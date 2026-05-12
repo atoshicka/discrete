@@ -57,7 +57,7 @@ const vertices = ["S", "A", "B", "C", "F"];
 const edges = [
     { from: "S", to: "A", weight: 4 },
     { from: "S", to: "B", weight: 3 },
-    //{ from: "A", to: "B", weight: -2 },
+    { from: "A", to: "B", weight: -2 },
     { from: "B", to: "A", weight: 1 },
     { from: "B", to: "C", weight: 2 },
     { from: "C", to: "F", weight: 1 },

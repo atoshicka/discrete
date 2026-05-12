@@ -1,0 +1,83 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #f5f2eb;
+  --ink:     #1a1a1a;
+  --muted:   #888;
+  --accent:  #c0392b;
+  --cell:    20px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 60px;
+  gap: 24px;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+h1 span {
+  color: var(--accent);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .8rem;
+  color: var(--muted);
+}
+label strong { color: var(--ink); min-width: 20px; }
+
+input[type=range] {
+  width: 90px;
+  accent-color: var(--ink);
+}
+
+button {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: .82rem;
+  padding: 8px 18px;
+  border: 1.5px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+button:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--bg);
+}
+button:disabled {
+  border-color: #ccc;
+  color: #ccc;
+  cursor: default;
+}
+
+#mazeCanvas {
+  display: block;
+  border: 1.5px solid var(--ink);
+}
+
+#status {
+  font-size: .78rem;
+  color: var(--muted);
+  min-height: 1.2em;
+}
